@@ -1,0 +1,120 @@
+task: structure-info
+input: POSCAR
+output: symmetry.yaml
+formula: As4K4Pt2
+natoms: 10
+volume: 291.99280094
+cell_lengths:
+- 7.93401992
+- 7.93401992
+- 6.2002523
+cell_angles:
+- 90.0
+- 90.0
+- 131.57147691
+lattice_matrix:
+- - 3.25413873
+  - -7.23596941
+  - 0.0
+- - 3.25413873
+  - 7.23596941
+  - 0.0
+- - 0.0
+  - 0.0
+  - 6.2002523
+pbc:
+- true
+- true
+- true
+elements:
+- As
+- K
+- Pt
+counts:
+  As: 4
+  K: 4
+  Pt: 2
+positions_fractional:
+- - 0.57856755
+  - 0.42143245
+  - 0.25
+- - 0.42143245
+  - 0.57856755
+  - 0.75
+- - 0.20394371
+  - 0.79605629
+  - 0.25
+- - 0.79605629
+  - 0.20394371
+  - 0.75
+- - 0.07915166
+  - 0.29843773
+  - 0.25
+- - 0.29843773
+  - 0.07915166
+  - 0.75
+- - 0.92084834
+  - 0.70156227
+  - 0.75
+- - 0.70156227
+  - 0.92084834
+  - 0.25
+- - 0.0
+  - 0.0
+  - 0.0
+- - 0.0
+  - 0.0
+  - 0.5
+symmetry:
+  spacegroup_number: 63
+  international_symbol: Cmcm
+  hall_symbol: -C 2c 2
+  point_group: mmm
+  crystal_system: orthorhombic
+  choice: ''
+  origin_shift:
+  - 0.0
+  - 0.0
+  - 0.5
+  transformation_matrix:
+  - - 0.5
+    - 0.5
+    - 0.0
+  - - -0.5
+    - 0.5
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  std_rotation_matrix:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  equivalent_atoms:
+  - 0
+  - 0
+  - 2
+  - 2
+  - 4
+  - 4
+  - 4
+  - 4
+  - 8
+  - 8
+  wyckoffs:
+  - c
+  - c
+  - c
+  - c
+  - g
+  - g
+  - g
+  - g
+  - a
+  - a
