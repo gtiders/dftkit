@@ -133,3 +133,18 @@ class StackingGridInput(BaseModel):
             raise ValueError("tol must be non-negative")
 
         return self
+
+
+class BilayerBuildInput(BaseModel):
+    input: Path = Field(default=Path("POSCAR"))
+    output: Path = Field(default=Path("BPOSCAR"))
+    gap: float = Field(default=3.5)
+    z_length: float = Field(default=30.0)
+
+    @model_validator(mode="after")
+    def validate_bilayer_build(self) -> "BilayerBuildInput":
+        if self.gap <= 0.0:
+            raise ValueError("gap must be positive")
+        if self.z_length < 30.0:
+            raise ValueError("z_length must be at least 30.0")
+        return self

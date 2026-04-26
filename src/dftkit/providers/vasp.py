@@ -15,12 +15,14 @@ from dftkit.operations.vasp.task_104_conventional_standardize import (
 from dftkit.operations.vasp.task_105_supercell_build import run_supercell_build
 from dftkit.operations.vasp.task_106_cutoff_radii import run_cutoff_radii
 from dftkit.operations.vasp.task_108_stacking_grid import run_stacking_grid
+from dftkit.operations.vasp.task_112_bilayer_build import run_bilayer_build
 from dftkit.operations.vasp.task_201_stru_to_poscar_convert import (
     run_stru_to_poscar_convert,
 )
 from dftkit.schemas.vasp.file_conversion import StruToPoscarInput
 from dftkit.schemas.vasp.input_files import BandPathInput, KpointsMeshInput
 from dftkit.schemas.vasp.structure_analysis import (
+    BilayerBuildInput,
     ConventionalStandardizeInput,
     CutoffRadiiInput,
     PrimitiveStandardizeInput,
@@ -298,6 +300,47 @@ TASKS: dict[str, TaskDefinition] = {
                 help="If true, replace existing POSCAR files in output directories.",
                 parser=_bool_parser,
                 default=False,
+            ),
+        ),
+    ),
+    "112": TaskDefinition(
+        task_id="112",
+        name="bilayer-build",
+        group_id="1",
+        summary="Build a bilayer by duplicating a monolayer along z.",
+        description=(
+            "Read a monolayer POSCAR from the current directory, duplicate it "
+            "along the fixed z vacuum direction, enforce the requested interlayer "
+            "gap, center the bilayer along z, and write BPOSCAR in direct coordinates."
+        ),
+        model=BilayerBuildInput,
+        operation=run_bilayer_build,
+        prompts=(
+            PromptSpec(
+                field_name="input",
+                prompt="Input monolayer POSCAR",
+                help="Usually POSCAR.",
+                default="POSCAR",
+            ),
+            PromptSpec(
+                field_name="output",
+                prompt="Output bilayer POSCAR",
+                help="Usually BPOSCAR.",
+                default="BPOSCAR",
+            ),
+            PromptSpec(
+                field_name="gap",
+                prompt="Interlayer gap along z",
+                help="Distance from the bottom layer's highest atom to the top layer's lowest atom.",
+                parser=float,
+                default=3.5,
+            ),
+            PromptSpec(
+                field_name="z_length",
+                prompt="Final z length",
+                help="Final lattice length along z. Must be at least 30 Angstrom.",
+                parser=float,
+                default=30.0,
             ),
         ),
     ),
