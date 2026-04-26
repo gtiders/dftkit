@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 from dftkit.models import PromptSpec, ProviderDefinition, TaskDefinition
-from dftkit.operations.abacus.kpath import run_kpath_generate
-from dftkit.operations.abacus.structure import run_structure_info
-from dftkit.schemas.abacus.kpath import KPathGenerateInput
-from dftkit.schemas.abacus.structure import StructureInfoInput
+from dftkit.operations.abacus.task_201_poscar_to_stru_convert import (
+    run_poscar_to_stru_convert,
+)
+from dftkit.operations.abacus.task_202_poscar_to_stru_swap_ac_convert import (
+    run_poscar_to_stru_swap_ac_convert,
+)
+from dftkit.operations.abacus.task_102_structure_info import run_structure_info
+from dftkit.schemas.abacus.file_conversion import (
+    PoscarToStruInput,
+    PoscarToStruSwapACInput,
+)
+from dftkit.schemas.abacus.structure_analysis import StructureInfoInput
 
 GROUP_NAMES: dict[str, str] = {
-    "0": "General Utilities",
     "1": "Structure Analysis",
     "2": "File Conversion",
-    "3": "Electronic Structure",
-    "4": "Density of States",
-    "5": "Charge and Wavefunction",
-    "6": "Phonon and Vibrations",
-    "7": "Molecular Dynamics",
-    "8": "Post-processing",
-    "9": "K-Path and Brillouin Zone",
 }
 
 
@@ -62,48 +62,68 @@ TASKS: dict[str, TaskDefinition] = {
             ),
         ),
     ),
-    "902": TaskDefinition(
-        task_id="902",
-        name="kpath-generate",
-        group_id="9",
-        summary="Generate a high-symmetry k-path for ABACUS.",
+    "201": TaskDefinition(
+        task_id="201",
+        name="poscar-to-stru-convert",
+        group_id="2",
+        summary="Convert POSCAR to ABACUS STRU.",
         description=(
-            "Standardize the structure and build a high-symmetry k-path for the "
-            "ABACUS context."
+            "Read a POSCAR file and write an ABACUS STRU file through dpdata. "
+            "Optional pseudopotential and orbital mappings may be supplied through "
+            "a JSON file."
         ),
-        model=KPathGenerateInput,
-        operation=run_kpath_generate,
+        model=PoscarToStruInput,
+        operation=run_poscar_to_stru_convert,
         prompts=(
             PromptSpec(
                 field_name="input",
-                prompt="Input structure file",
-                help="STRU or CIF recommended.",
-            ),
-            PromptSpec(
-                field_name="code",
-                prompt="Target code",
-                help="Output style such as abacus.",
-                default="abacus",
-            ),
-            PromptSpec(
-                field_name="line_density",
-                prompt="Line density",
-                help="Number of points per reciprocal length unit.",
-                parser=int,
-                default=20,
-            ),
-            PromptSpec(
-                field_name="primitive",
-                prompt="Reduce to primitive cell?",
-                help="Recommended for standard k-path generation.",
-                parser=_bool_parser,
-                default=True,
+                prompt="Input POSCAR",
+                help="Usually POSCAR.",
+                default="POSCAR",
             ),
             PromptSpec(
                 field_name="output",
-                prompt="Output file",
-                help="File path for the generated k-path text.",
-                default="KPOINTS",
+                prompt="Output STRU",
+                help="Usually STRU.",
+                default="STRU",
+            ),
+            PromptSpec(
+                field_name="basis_json",
+                prompt="Basis JSON",
+                help="Optional JSON file with pp_file and numerical_orbital mappings.",
+            ),
+        ),
+    ),
+    "202": TaskDefinition(
+        task_id="202",
+        name="poscar-to-stru-swap-ac-convert",
+        group_id="2",
+        summary="Convert POSCAR to ABACUS STRU after swapping a and c axes.",
+        description=(
+            "Read a POSCAR file, swap the a and c axes while preserving the "
+            "handedness convention of the original conversion script, then write "
+            "an ABACUS STRU file through dpdata. Optional pseudopotential and "
+            "orbital mappings may be supplied through a JSON file."
+        ),
+        model=PoscarToStruSwapACInput,
+        operation=run_poscar_to_stru_swap_ac_convert,
+        prompts=(
+            PromptSpec(
+                field_name="input",
+                prompt="Input POSCAR",
+                help="Usually POSCAR.",
+                default="POSCAR",
+            ),
+            PromptSpec(
+                field_name="output",
+                prompt="Output STRU",
+                help="Usually STRU.",
+                default="STRU",
+            ),
+            PromptSpec(
+                field_name="basis_json",
+                prompt="Basis JSON",
+                help="Optional JSON file with pp_file and numerical_orbital mappings.",
             ),
         ),
     ),

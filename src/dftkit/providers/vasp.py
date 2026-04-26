@@ -1,24 +1,30 @@
 from __future__ import annotations
 
 from dftkit.models import PromptSpec, ProviderDefinition, TaskDefinition
-from dftkit.operations.vasp.kpoints import (
-    run_band_path_prepare,
-    run_kpoints_mesh_generate,
+from dftkit.operations.vasp.task_001_kpoints_mesh import run_kpoints_mesh
+from dftkit.operations.vasp.task_002_band_kpoints_prepare import (
+    run_band_kpoints_prepare,
 )
-from dftkit.operations.vasp.kpath import run_kpath_generate
-from dftkit.operations.vasp.cutoff import run_cutoff_radii
-from dftkit.operations.vasp.structure import (
-    run_conventional_standardize,
+from dftkit.operations.vasp.task_102_structure_info import run_structure_info
+from dftkit.operations.vasp.task_103_primitive_standardize import (
     run_primitive_standardize,
-    run_structure_info,
-    run_supercell_build,
 )
-from dftkit.schemas.vasp.cutoff import CutoffRadiiInput
-from dftkit.schemas.vasp.kpoints import BandPathInput, KpointsMeshInput
-from dftkit.schemas.vasp.kpath import KPathGenerateInput
-from dftkit.schemas.vasp.structure import (
+from dftkit.operations.vasp.task_104_conventional_standardize import (
+    run_conventional_standardize,
+)
+from dftkit.operations.vasp.task_105_supercell_build import run_supercell_build
+from dftkit.operations.vasp.task_106_cutoff_radii import run_cutoff_radii
+from dftkit.operations.vasp.task_108_stacking_grid import run_stacking_grid
+from dftkit.operations.vasp.task_201_stru_to_poscar_convert import (
+    run_stru_to_poscar_convert,
+)
+from dftkit.schemas.vasp.file_conversion import StruToPoscarInput
+from dftkit.schemas.vasp.input_files import BandPathInput, KpointsMeshInput
+from dftkit.schemas.vasp.structure_analysis import (
     ConventionalStandardizeInput,
+    CutoffRadiiInput,
     PrimitiveStandardizeInput,
+    StackingGridInput,
     StructureInfoInput,
     SupercellBuildInput,
 )
@@ -27,13 +33,6 @@ GROUP_NAMES: dict[str, str] = {
     "0": "VASP Input-Files Generator",
     "1": "Structure Analysis",
     "2": "File Conversion",
-    "3": "Electronic Structure",
-    "4": "Density of States",
-    "5": "Charge and Wavefunction",
-    "6": "Phonon and Vibrations",
-    "7": "Molecular Dynamics",
-    "8": "Post-processing",
-    "9": "K-Path and Brillouin Zone",
 }
 
 
@@ -66,7 +65,7 @@ TASKS: dict[str, TaskDefinition] = {
             "high-symmetry band path, write line-mode KPOINTS, and write kpath.yaml."
         ),
         model=BandPathInput,
-        operation=run_band_path_prepare,
+        operation=run_band_kpoints_prepare,
         prompts=(
             PromptSpec(
                 field_name="line_density",
@@ -88,7 +87,7 @@ TASKS: dict[str, TaskDefinition] = {
             "space resolution, and write KPOINTS."
         ),
         model=KpointsMeshInput,
-        operation=run_kpoints_mesh_generate,
+        operation=run_kpoints_mesh,
         prompts=(
             PromptSpec(
                 field_name="mode",
@@ -222,48 +221,110 @@ TASKS: dict[str, TaskDefinition] = {
             ),
         ),
     ),
-    "902": TaskDefinition(
-        task_id="902",
-        name="kpath-generate",
-        group_id="9",
-        summary="Generate a high-symmetry k-path for VASP.",
+    "108": TaskDefinition(
+        task_id="108",
+        name="stacking-grid-generate",
+        group_id="1",
+        summary="Generate bilayer stacking-grid POSCARs by translating one layer.",
         description=(
-            "Standardize the structure and build a high-symmetry k-path for the "
-            "VASP context."
+            "Read a bilayer POSCAR, treat the single zero-grid axis as the vacuum "
+            "direction, split the two layers by fractional cut, and write a grid "
+            "of translated structures in subdirectories under the output folder."
         ),
-        model=KPathGenerateInput,
-        operation=run_kpath_generate,
+        model=StackingGridInput,
+        operation=run_stacking_grid,
         prompts=(
             PromptSpec(
                 field_name="input",
-                prompt="Input structure file",
-                help="POSCAR or CIF recommended.",
+                prompt="Input bilayer POSCAR",
+                help="Usually monolayer POSCAR.",
+                default="POSCAR",
             ),
             PromptSpec(
-                field_name="code",
-                prompt="Target code",
-                help="Output style such as vasp.",
-                default="vasp",
+                field_name="a_grid",
+                prompt="Grid points along a",
+                help="Use 0 if a is the vacuum axis.",
+                default=0,
             ),
             PromptSpec(
-                field_name="line_density",
-                prompt="Line density",
-                help="Number of points per reciprocal length unit.",
-                parser=int,
-                default=20,
+                field_name="b_grid",
+                prompt="Grid points along b",
+                help="Use 0 if b is the vacuum axis.",
+                default=0,
             ),
             PromptSpec(
-                field_name="primitive",
-                prompt="Reduce to primitive cell?",
-                help="Recommended for standard k-path generation.",
-                parser=_bool_parser,
-                default=True,
+                field_name="c_grid",
+                prompt="Grid points along c",
+                help="Use 0 if c is the vacuum axis.",
+                default=0,
             ),
             PromptSpec(
                 field_name="output",
-                prompt="Output file",
-                help="File path for the generated k-path text.",
-                default="KPOINTS",
+                prompt="Output directory",
+                help="Root directory for the generated stacking subfolders.",
+                default="stacking_grid",
+            ),
+            PromptSpec(
+                field_name="cut",
+                prompt="Layer split cut",
+                help="Fractional cut on the vacuum axis used to split upper and lower layers.",
+                parser=float,
+                default=0.5,
+            ),
+            PromptSpec(
+                field_name="move",
+                prompt="Moving layer",
+                help="Choose which layer to translate.",
+                choices=(("upper", "Upper"), ("lower", "Lower")),
+                default="upper",
+            ),
+            PromptSpec(
+                field_name="tol",
+                prompt="Cut tolerance",
+                help="Atoms closer than this to the cut will trigger an error.",
+                parser=float,
+                default=1e-6,
+            ),
+            PromptSpec(
+                field_name="skip_origin",
+                prompt="Skip origin structure",
+                help="If true, do not write the unshifted structure.",
+                parser=_bool_parser,
+                default=False,
+            ),
+            PromptSpec(
+                field_name="overwrite",
+                prompt="Overwrite existing files",
+                help="If true, replace existing POSCAR files in output directories.",
+                parser=_bool_parser,
+                default=False,
+            ),
+        ),
+    ),
+    "201": TaskDefinition(
+        task_id="201",
+        name="stru-to-poscar-convert",
+        group_id="2",
+        summary="Convert ABACUS STRU to POSCAR with optional a/c swap.",
+        description=(
+            "Read an ABACUS STRU file through dpdata, optionally swap the a and c "
+            "axes to reverse the paired ABACUS conversion convention, and write a "
+            "VASP POSCAR file."
+        ),
+        model=StruToPoscarInput,
+        operation=run_stru_to_poscar_convert,
+        prompts=(
+            PromptSpec(
+                field_name="input",
+                prompt="Input STRU",
+                help="Usually STRU.",
+                default="STRU",
+            ),
+            PromptSpec(
+                field_name="output",
+                prompt="Output POSCAR",
+                help="Usually POSCAR.",
+                default="POSCAR",
             ),
         ),
     ),

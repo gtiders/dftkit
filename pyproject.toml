@@ -12,6 +12,7 @@ dependencies = [
     "ase>=3.28.0",
     "click>=8.3.3",
     "click-option-group",
+    "dpdata>=1.0.1",
     "matplotlib>=3.10.9",
     "numpy>=2.2.6",
     "pandas>=2.3.3",

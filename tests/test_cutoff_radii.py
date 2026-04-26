@@ -7,8 +7,8 @@ from ase import Atoms
 from ase.io.vasp import write_vasp
 from ase.units import Bohr
 
-from dftkit.operations.vasp.cutoff import run_cutoff_radii
-from dftkit.schemas.vasp.cutoff import CutoffRadiiInput
+from dftkit.operations.vasp.task_106_cutoff_radii import run_cutoff_radii
+from dftkit.schemas.vasp.structure_analysis import CutoffRadiiInput
 
 
 def test_cutoff_radii_uses_wigner_seitz_inradius_for_maximum_cutoff(tmp_path: Path):

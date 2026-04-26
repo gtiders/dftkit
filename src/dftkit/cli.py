@@ -51,8 +51,8 @@ def _provider_help_text(provider: ProviderDefinition) -> str:
         f"{provider.description}\n\n"
         f"Examples:\n"
         f"  dftkit {provider.provider_id} --list-tasks\n"
-        f"  dftkit {provider.provider_id} --task 902 --help\n"
-        f"  dftkit {provider.provider_id} --task 902 -- --input POSCAR\n"
+        f"  dftkit {provider.provider_id} --task 102 --help\n"
+        f"  dftkit {provider.provider_id} --task 102 -- --input POSCAR\n"
     )
 
 
@@ -183,7 +183,7 @@ def _provider_command(provider_id: str):
         name=provider_id,
         context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
     )
-    @click.option("--task", "task_id", help="Numeric task id, for example 902.")
+    @click.option("--task", "task_id", help="Numeric task id, for example 102.")
     @click.option("--list-tasks", is_flag=True, help="List all registered tasks.")
     @click.option("--help", "show_help", is_flag=True, help="Show provider or task help.")
     @click.pass_context
@@ -237,6 +237,3 @@ def list_providers() -> None:
 
 main.add_command(_provider_command("vasp"))
 main.add_command(_provider_command("abacus"))
-main.add_command(_provider_command("gpumd"))
-main.add_command(_provider_command("shengbte"))
-main.add_command(_provider_command("alamode"))

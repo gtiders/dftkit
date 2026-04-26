@@ -4,19 +4,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from ase import Atoms
-from ase.build import make_supercell
 from ase.io import read
-from ase.io.vasp import write_vasp
 from ruamel.yaml import YAML
 import spglib
 
-from dftkit.schemas.vasp.structure import (
-    ConventionalStandardizeInput,
-    PrimitiveStandardizeInput,
-    StructureInfoInput,
-    SupercellBuildInput,
-)
+from dftkit.schemas.vasp.structure_analysis import StructureInfoInput
 
 yaml = YAML()
 yaml.default_flow_style = False
@@ -116,115 +108,4 @@ def run_structure_info(task_input: StructureInfoInput) -> dict[str, Any]:
         "spacegroup": analysis.get("symmetry", {}).get("international_symbol", "N/A"),
         "point_group": analysis.get("symmetry", {}).get("point_group", "N/A"),
         "crystal_system": analysis.get("symmetry", {}).get("crystal_system", "N/A"),
-    }
-
-
-def _atoms_to_spglib_cell(atoms: Atoms) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    return (
-        np.array(atoms.cell.array, dtype=float),
-        np.array(atoms.get_scaled_positions(), dtype=float),
-        np.array(atoms.get_atomic_numbers(), dtype=int),
-    )
-
-
-def _spglib_cell_to_atoms(cell: tuple[np.ndarray, np.ndarray, np.ndarray]) -> Atoms:
-    lattice, positions, numbers = cell
-    return Atoms(
-        numbers=list(numbers),
-        cell=np.array(lattice, dtype=float),
-        scaled_positions=np.array(positions, dtype=float),
-        pbc=True,
-    )
-
-
-def _write_poscar(path: Path, atoms: Atoms) -> None:
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        write_vasp(handle, atoms, direct=True, sort=True)
-
-
-def _format_matrix(matrix: np.ndarray) -> str:
-    rows = ["[" + ", ".join(f"{value: .8f}" for value in row) + "]" for row in matrix]
-    return "\n".join(rows)
-
-
-def _standardize_structure(
-    input_path: Path,
-    *,
-    to_primitive: bool,
-    output_path: Path,
-    symprec: float,
-    angle_tolerance: float,
-    task_name: str,
-) -> dict[str, Any]:
-    source_atoms = read(input_path, format="vasp")
-    source_lattice = np.array(source_atoms.cell.array, dtype=float)
-    standardized_cell = spglib.standardize_cell(
-        _atoms_to_spglib_cell(source_atoms),
-        to_primitive=to_primitive,
-        no_idealize=False,
-        symprec=symprec,
-        angle_tolerance=angle_tolerance,
-    )
-    if standardized_cell is None:
-        raise ValueError("spglib failed to standardize the input structure")
-
-    target_atoms = _spglib_cell_to_atoms(standardized_cell)
-    target_lattice = np.array(target_atoms.cell.array, dtype=float)
-    transform = target_lattice @ np.linalg.inv(source_lattice)
-    inverse_transform = np.linalg.inv(transform)
-    _write_poscar(output_path, target_atoms)
-
-    return {
-        "task": task_name,
-        "input": str(input_path),
-        "output": str(output_path),
-        "natoms_in": len(source_atoms),
-        "natoms_out": len(target_atoms),
-        "lattice_transform": _format_matrix(transform),
-        "inverse_lattice_transform": _format_matrix(inverse_transform),
-    }
-
-
-def run_primitive_standardize(task_input: PrimitiveStandardizeInput) -> dict[str, Any]:
-    return _standardize_structure(
-        task_input.input,
-        to_primitive=True,
-        output_path=task_input.output,
-        symprec=task_input.symprec,
-        angle_tolerance=task_input.angle_tolerance,
-        task_name="primitive-standardize",
-    )
-
-
-def run_conventional_standardize(
-    task_input: ConventionalStandardizeInput,
-) -> dict[str, Any]:
-    return _standardize_structure(
-        task_input.input,
-        to_primitive=False,
-        output_path=task_input.output,
-        symprec=task_input.symprec,
-        angle_tolerance=task_input.angle_tolerance,
-        task_name="conventional-standardize",
-    )
-
-
-def run_supercell_build(task_input: SupercellBuildInput) -> dict[str, Any]:
-    source_atoms = read(task_input.input, format="vasp")
-    matrix = np.array(task_input.matrix, dtype=int)
-    supercell_atoms = make_supercell(
-        source_atoms,
-        matrix,
-        wrap=True,
-        order="atom-major",
-    )
-    _write_poscar(task_input.output, supercell_atoms)
-    return {
-        "task": "supercell-build",
-        "input": str(task_input.input),
-        "output": str(task_input.output),
-        "natoms_in": len(source_atoms),
-        "natoms_out": len(supercell_atoms),
-        "supercell_matrix": _format_matrix(matrix.astype(float)),
-        "atom_order": "atom-major",
     }

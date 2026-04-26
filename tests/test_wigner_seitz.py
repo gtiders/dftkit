@@ -4,7 +4,7 @@ import pytest
 from ase import Atoms
 from ase.units import Bohr
 
-from dftkit.operations.vasp.cutoff import analyze_real_space_wigner_seitz
+from dftkit.operations.vasp.task_106_cutoff_radii import analyze_real_space_wigner_seitz
 
 
 @pytest.mark.parametrize(

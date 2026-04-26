@@ -11,7 +11,7 @@ from ase.io import read
 from ase.units import Bohr
 import spglib
 
-from dftkit.schemas.vasp.cutoff import CutoffRadiiInput
+from dftkit.schemas.vasp.structure_analysis import CutoffRadiiInput
 
 RTOL = 1e-5
 ATOL = 1e-8

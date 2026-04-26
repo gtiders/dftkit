@@ -105,8 +105,9 @@ def _pairwise_rows(items: list[str]) -> list[tuple[str, str]]:
 
 
 def _render_top_menu(provider: ProviderDefinition) -> None:
-    console.print(f"[bold]{provider.display_name} Main Menu[/bold]")
-    table = plain_table("", show_header=False)
+    table = plain_table(
+        f"[bold]{provider.display_name} Main Menu[/bold]", show_header=True
+    )
     table.add_column(style="cyan", no_wrap=True)
     table.add_column(style="cyan", no_wrap=True)
     items = [
@@ -120,10 +121,10 @@ def _render_top_menu(provider: ProviderDefinition) -> None:
 
 
 def _render_group_menu(provider: ProviderDefinition, group_id: str) -> None:
-    console.print(
-        f"[bold]{provider.display_name} Menu {group_id}[/bold]  {provider.group_names[group_id]}"
+    table = plain_table(
+        f"[bold]{provider.display_name} Menu {group_id}[/bold]  {provider.group_names[group_id]}",
+        show_header=True,
     )
-    table = plain_table("", show_header=False)
     table.add_column(style="green", no_wrap=True)
     table.add_column(style="green", no_wrap=True)
     items = [
@@ -140,6 +141,8 @@ def choose_task_interactively(provider: ProviderDefinition) -> TaskDefinition | 
     while True:
         _render_top_menu(provider)
         choice = _input_with_marker().lower()
+        if not choice:
+            continue
         if choice == "q":
             return None
         direct_task = get_task_definition(provider, choice)
@@ -152,13 +155,13 @@ def choose_task_interactively(provider: ProviderDefinition) -> TaskDefinition | 
         while True:
             _render_group_menu(provider, choice)
             task_choice = _input_with_marker().lower()
+            if not task_choice:
+                continue
             if task_choice == "q":
                 break
 
             task = get_task_definition(provider, task_choice)
             if task is None or task.group_id != choice:
-                console.print(
-                    f"[red]Unknown task id in menu {choice}: {task_choice}[/red]"
-                )
+                console.print(f"Unknown task id in menu {choice}: {task_choice}")
                 continue
             return task
